@@ -2,11 +2,14 @@
 #define _WAKE_LIGHT_H
 
 #include <limits.h>
+#include <NTPClient.h>
+#include <WiFiUdp.h>
+#include <ros.h>
 
-namespace WakeLight {
+namespace Alarm {
 
+    const char DaysOfWeekStr[7][12] {"Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"};
     enum DaysOfWeekNum{Sunday,Monday,Tuesday,Wednesday,Thursday,Friday,Saturday};
-    char DaysOfWeekStr[7][12] {"Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"};
     inline DaysOfWeekNum operator++(DaysOfWeekNum& day, int) {
         if(day == Saturday){
             return Sunday;
@@ -26,7 +29,7 @@ namespace WakeLight {
 
     class Time {
         public:
-        long int toSeconds(){
+        long int toSeconds() {
             long int seconds = 0;
             seconds += this->hours*60*60;
             seconds += this->minutes*60;
@@ -40,10 +43,26 @@ namespace WakeLight {
                 && this->seconds    == other.seconds;
         }
         bool operator>(Time other) {
-
+            if(this->day == other.day++) {
+                return true;
+            }
+            else if(this->day == other.day){
+                return (this->toSeconds() > other.toSeconds());
+            }
+            else {
+                return false;
+            }
         }
         bool operator<(Time other) {
-
+            if(this->day == other.day--) {
+                return true;
+            }
+            else if(this->day == other.day){
+                return (this->toSeconds() < other.toSeconds());
+            }
+            else {
+                return false;
+            }
         }
         bool operator>=(Time other) {
             return (*this > other) || (*this == other);
@@ -84,13 +103,6 @@ namespace WakeLight {
         int seconds;
     };
 
-    enum State {
-        WAIT,
-        WAKE,
-        ALARM,
-        ERROR
-    };
-
     class WakeLight {
         public:
         WakeLight(){}
@@ -102,26 +114,57 @@ namespace WakeLight {
         void setTempAlarm(Time alarm){
             tempAlarm = alarm;
         }
-        void setNetworkTime(Time time){
+        void setBaseTime(Time time){
             networkBaseTime = time;
         }
         void update(){
+            // update time 
+            updateInternalTime();
+            // alarm clock state machine
             switch(state) {
                 case WAIT:
+                // light and buzzer are off
+                rgbw[0] = 0;
+                rgbw[1] = 0;
+                rgbw[2] = 0;
+                rgbw[3] = 0;
+
+                // check if wake sequence should start
+                if(currentTime >= getLightTime()) {
+                    state = WAKE;
+                }
 
                 case WAKE:
                 // calculate progress of 30 minute wake fade, percentage from 0 to 1.
                 float progress = ((currentTime - getLightTime()).toSeconds()) / (30 * 60);
+                // augment progress curve
+                progress = sqrt(progress);
+                // calculate rgbw values
+                rgbw[0] = progress * maxRed;
+                rgbw[1] = progress * maxGrn;
+                rgbw[2] = progress * maxBlu;
+                rgbw[3] = progress * maxWht;
 
-
+                // check if alarm time has been reached
+                if(currentTime >= getCurrentAlarm()){
+                    state = ALARM;
+                }
+                break;
+            
                 case ALARM:
+                // blink lights and buzzer
+
+                // check for button press and bed empty
 
                 case ERROR:
+                // identify and handle error
+                // not sure what errors, if any, this class can encounter
 
             }
         }
-        uint8* getRGBWLevels(){}
-        protected:
+        uint8* getRGBWLevels(){return rgbw;}
+
+        private:
         void updateInternalTime(){
             // update time since last update
             long int currMillis = millis();
@@ -178,9 +221,10 @@ namespace WakeLight {
             return lightTime;
         }
         
-
-        private:
+        // status and IO variables
+        static enum State {WAIT, WAKE, ALARM, ERROR};
         State state;
+        uint8 rgbw[4];
         // Alarm settings
         Time defaults[7];
         Time tempAlarm;
@@ -193,7 +237,6 @@ namespace WakeLight {
         // WAIT
 
         // WAKE
-        uint8 rgbw[4];
         uint8 maxRed;
         uint8 maxGrn;
         uint8 maxBlu;
@@ -204,6 +247,28 @@ namespace WakeLight {
         // ERROR
     };
 
-}
+};
+
+namespace SmartHome {
+namespace ROS {
+    
+        class WakeLight {
+        public:
+        WakeLight(){}
+        ~WakeLight(){}
+        
+        void update(){
+            alarmClock.update();
+        }
+
+        private:
+        Alarm::WakeLight alarmClock;
+
+        WiFiUDP UDPconn;
+        NTPClient timeClient(UDPconn, "pool.ntp.org", ntpOffset);
+ 
+    };
+};
+};
 
 #endif
