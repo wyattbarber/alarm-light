@@ -1,8 +1,10 @@
 #include <ESP8266WiFi.h>
 
-#include "WakeLight.h"
+//#include "WakeLight.h"
 #include <NTPClient.h>
 #include <WiFiUdp.h>
+#include <Time.h>
+#include <TimeLib.h>
 
 #define BUT_PIN         D1
 #define FIVE_V_PIN      D2
@@ -17,13 +19,9 @@
 const char *ssid = "the wifi";
 const char *pswd = "the wifi password";
 
-const long ntpOffset = -18000;
-
-WiFiUDP ntpUDP;
-NTPClient timeClient(ntpUDP, ntpOffset);
-Alarm::WakeLight alarmClock;
-
-int* rgbw = (int*)malloc(4*sizeof(int));
+long ntpOffset = -18000;
+WiFiUDP udp;
+NTPClient timeClient(udp, "pool.ntp.org", ntpOffset);
 
 void setup()
 {
@@ -36,19 +34,19 @@ void setup()
     }
     Serial.print('\n');
     timeClient.begin();
+    setSyncProvider(getNtpTime);
+    setSyncInterval((time_t)5);
 }
 
 void loop()
 {
-    timeClient.update();
-    if((millis() % 5000)==0)
-    {
-        alarmClock.setBaseTime(Alarm::Time((Alarm::DaysOfWeekNum)timeClient.getDay(),   
-                                            timeClient.getHours(),
-                                            timeClient.getMinutes(),
-                                            timeClient.getSeconds()));
-    }
-    alarmClock.update();
-    Serial.println(alarmClock.getStatus().time.toString()+'\n');
+    time_t t = now();
+    Serial.println(String(t)+" = "+timeClient.getFormattedTime());
     delay(1000);
+}
+
+time_t getNtpTime()
+{
+    timeClient.update();
+    return (time_t)(timeClient.getEpochTime()); 
 }
