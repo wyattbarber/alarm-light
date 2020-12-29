@@ -1,6 +1,6 @@
 #include <ESP8266WiFi.h>
 
-//#include "WakeLight.h"
+#include "AlarmLight.h"
 #include <NTPClient.h>
 #include <WiFiUdp.h>
 #include <Time.h>
@@ -16,12 +16,17 @@
 #define BUZ_PIN         D8
 #define MAT_PIN         A0
 
+// Wifi access data
 const char *ssid = "the wifi";
 const char *pswd = "the wifi password";
 
+// NTP client data
 long ntpOffset = -18000;
 WiFiUDP udp;
 NTPClient timeClient(udp, "pool.ntp.org", ntpOffset);
+
+// Alarm
+//SmartHome::AlarmLight alarm({1023, 1023, 1023, 1023});
 
 void setup()
 {
@@ -40,8 +45,8 @@ void setup()
 
 void loop()
 {
-    time_t t = now();
-    Serial.println(String(t)+" = "+timeClient.getFormattedTime());
+    //alarm.update();
+    //Serial.println(alarm.getStatus().toString());
     delay(1000);
 }
 
