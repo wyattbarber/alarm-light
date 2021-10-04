@@ -5,10 +5,12 @@
 #include <Time.h>
 #include <TimeLib.h>
 #include <vector>
+#include <math.h>
+#include <String.h>
 
 namespace SmartHome
 {
-    namespace Logic
+    namespace Helpers
     {
         class RTrig
         {
@@ -18,11 +20,11 @@ namespace SmartHome
                 this->val = var;
                 this->isFun = false;
             }
-            RTrig(bool (*var)() )
+            /*RTrig(bool (*var)() )
             {
                 this->var = var;
                 this->isFun = true;
-            }
+            }*/
             RTrig(std::function<bool()> var)
             {
                 this->var = var;
@@ -62,11 +64,47 @@ namespace SmartHome
             bool prev;
             bool q;
         };
+    
+        uint8_t* rgbFromK(int K)
+        {
+            uint8_t red, green, blue;
+
+            if (K <= 66000) { red = 255; }
+            else
+            {
+                red = 392.698727446 * pow(K - 60000, -0.1332047592);
+                if (red > 255) {red = 255;}
+                if (red < 0) {red = 0;}
+            }
+            
+            if (K <= 66000)
+            { 
+                green = 99.4708025861 * log(K) - 161.1195681661;
+                if (green > 255) {green = 255;}
+                if (green < 0) {green = 0;}
+            }
+            else
+            {
+                green = 288.1221695283 * pow(K - 60000, -0.0755148492);
+                if (green > 255) {green = 255;}
+                if (green < 0) {green = 0;}
+            }
+            
+            if (K >= 66000) {blue = 255;}
+            else if (K <= 19000) {blue = 0;}
+            else
+            {
+                138.5177312231 * log(K - 10000) - 305.0447927307;
+                if (blue > 255) {blue = 255;}
+                if (blue < 0) {blue = 0;}
+            }
+        }
     }
 
     typedef enum {
-        WAIT,
-        PREALARM,
+        WAIT_DAY,
+        WAIT_ALARM,
+        LIGHTUP,
         ALARM,
         ERROR
     } AlarmState;
@@ -79,6 +117,35 @@ namespace SmartHome
             this->state = state;
             this->t     = t;
             this->alarm = alarm;
+        }
+        String toString(){
+            String ret = "State: ";
+            switch(state)
+            {
+                case WAIT_DAY:
+                {
+                    ret += "WAIT_DAY, ";
+                    break;
+                }
+                case WAIT_ALARM:
+                {
+                    ret += "WAIT_ALARM, ";
+                    break;
+                }
+                case LIGHTUP: 
+                {
+                    ret += "LIGHTUP, ";
+                    break;
+                }
+                case ALARM:
+                {
+                    ret += "ALARM, ";
+                    break;
+                }
+            }
+            ret += "Time: " + String(t) + ", ";
+            ret += "Alarm: " + String(alarm);
+            return ret;
         }
         AlarmState  state;
         time_t      t;
@@ -98,36 +165,30 @@ namespace SmartHome
     class AlarmLight
     {
     public:
-        AlarmLight(int* maxRGBW, TimeElements* defaults);
+        AlarmLight(const int* maxRGBW);
         ~AlarmLight();
 
         void    update();
         int*    getLights();
+        bool    getBuzzer();
+        time_t  getNext(); 
+        void    set(time_t alarm);
         void    acknowledge();
-        time_t  clearDefault();
-        time_t  clearTemp();
-        time_t  clearNext();
-        void    setTemp(TimeElements alarm);
-        int*    getRGBW();
+        void    clear();
         AlarmStatus getStatus();
 
-    private:
-        TimeElements tm;
-
-        time_t getNextAlarm();
-        void setDefaults();
+    private:      
+        AlarmState state;  
         
-        AlarmState state;
-        bool usingTemp;
-        std::vector<time_t> defaultAlarms;
-        std::vector<time_t> tempAlarms;
-        TimeElements* defaults;
-        time_t getNextWday(TimeElements tn);
+//        std::vector<time_t> alarms;
+        time_t alarm;
 
-        Logic::RTrig* resetDefaults;
+        int maxRGBW[4];
+        int rgbw[4];
+        bool buzzer;
 
-        int* maxRGBW;
-        int* rgbw;
+        static const long LIGHTUP_TIME = 30 * SECS_PER_MIN;
+        static const long MAX_ALARM_TIME = 20 * SECS_PER_MIN;
     }; // class AlarmLight
 }; // namespace SmartHome
 
