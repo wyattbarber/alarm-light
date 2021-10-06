@@ -101,6 +101,7 @@ namespace SmartHome
         }
     }
 
+/*
     typedef enum {
         WAIT_DAY,
         WAIT_ALARM,
@@ -108,7 +109,8 @@ namespace SmartHome
         ALARM,
         ERROR
     } AlarmState;
-
+*/
+/*
     class AlarmStatus
     {
         public:
@@ -151,6 +153,7 @@ namespace SmartHome
         time_t      t;
         time_t      alarm;
     };
+*/
 
     // Day numbers
     const int Sunday    = 0;
@@ -171,17 +174,21 @@ namespace SmartHome
         void    update();
         int*    getLights();
         bool    getBuzzer();
-        time_t  getNext(); 
-        void    set(time_t alarm);
+        time_t  getAlarm(); 
+        void    setAlarm(TimeElements alarm);
         void    acknowledge();
-        void    clear();
-        AlarmStatus getStatus();
 
-    private:      
-        AlarmState state;  
-        
-//        std::vector<time_t> alarms;
-        time_t alarm;
+    private:   
+        time_t incrementAlarm();
+
+        TimeElements alarm;   
+        time_t next_alarm;
+        time_t light_time;
+        time_t end_alarm;
+
+        int day_of_alarm;
+
+        bool alarmActive;
 
         int maxRGBW[4];
         int rgbw[4];
