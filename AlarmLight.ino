@@ -20,46 +20,63 @@ const char *ssid = "the wifi";
 const char *pswd = "the wifi password";
 
 // NTP client data
-long ntpOffset = -18000;
+long ntpOffset = -14400;
 WiFiUDP udp;
-NTPClient timeClient(udp, "pool.ntp.org", ntpOffset);
+NTPClient timeClient(udp);
 TimeElements jetzt;
 
-// Alarm
-SmartHome::AlarmLight *alarm;
+// Alarm, max illumination
+SmartHome::AlarmLight *alarm;    
+int maxLights[] = {1023, 1023, 1023, 1023};
 
 // Button edge detect
 SmartHome::Helpers::RTrig button([](){return digitalRead(BUT_PIN);});
 
 void setup()
 {
-    // Set pins
+    // Start serial for debugging
+    Serial.begin(57600);
+
+    // Construct alarm
+    alarm = new SmartHome::AlarmLight(maxLights);
+
+    // Set pin modes
     pinMode(TWELVE_V_PIN, OUTPUT);
     pinMode(RED_PIN, OUTPUT);
     pinMode(BLU_PIN, OUTPUT);
     pinMode(GRN_PIN, OUTPUT);
     pinMode(WHT_PIN, OUTPUT);
 
-    // Begin WiFi connection and NTP client
+    // Begin WiFi
     WiFi.begin(ssid, pswd);
     while (WiFi.status() != WL_CONNECTED)
     {
+        Serial.println("WiFi connecting... ");
         delay(1000);
     }
-    timeClient.begin();
-    setSyncProvider(getNtpTime); // timeClient.update() called in getNtpTime()
-    setSyncInterval((time_t)60); // getNtpTime() called every 60 seconds
 
-    // Set alarm max illumination
-    int maxLights[] = {1023, 1023, 1023, 1023};
-    alarm = new SmartHome::AlarmLight(maxLights);
-    TimeElements a = jetzt;
+    // Begin NTP client
+    timeClient.begin();
+    timeClient.setTimeOffset(0);
+    timeClient.setUpdateInterval(60 * SECS_PER_HOUR);
+    Serial.println("TimeClient started.");
+    setSyncProvider(getNtpTime); // timeClient.update() called in getNtpTime()
+    setSyncInterval((time_t)60); // getNtpTime() called every minute
+
+    // Set alarm time
+    while (timeStatus() != timeSet)
+    {
+        Serial.println("NTP client connecting... ");
+        delay(1000);
+    }
+
+    Serial.println("Setting alarm.");
+    TimeElements a;
     a.Hour      = 6;
     a.Minute    = 0;
     a.Second    = 0;
     alarm->setAlarm(a);
 
-    Serial.begin(57600);
 }
 
 void loop()
@@ -68,9 +85,9 @@ void loop()
 
     // Update alarm status
     alarm->update();
-    
-    // Set light and buzzer outputs
     int* rgbw = alarm->getLights();
+
+    // Set 12V relay output
     if(
         (rgbw[0] != 0)
     ||  (rgbw[1] != 0)
@@ -85,12 +102,13 @@ void loop()
         digitalWrite(TWELVE_V_PIN, LOW);
     }
     
-    Serial.println("point 3");
-
+    // Set light outputs
     analogWrite(RED_PIN, rgbw[0]);
     analogWrite(BLU_PIN, rgbw[1]);
     analogWrite(GRN_PIN, rgbw[2]);
     analogWrite(WHT_PIN, rgbw[3]);
+
+    // Set buzzer output
     digitalWrite(BUZ_PIN, alarm->getBuzzer());
 
     // Check button
@@ -98,6 +116,24 @@ void loop()
     {
         alarm->acknowledge();
     }
+
+    // Log times status for debugging
+    Serial.print("Current time: ");
+    Serial.print(now());
+    Serial.print(". Alarm at: ");
+    Serial.print(alarm->getAlarm());
+    Serial.print(". Time to go: ");
+    Serial.print(alarm->getAlarm() - now());
+    Serial.print('\n');
+    Serial.print("Lights: ");
+    Serial.print(rgbw[0]);
+    Serial.print(", ");
+    Serial.print(rgbw[1]);
+    Serial.print(", ");
+    Serial.print(rgbw[2]);
+    Serial.print(", ");
+    Serial.print(rgbw[3]);
+    Serial.print(". \n");
 
     delay(1000);
 }
@@ -107,5 +143,5 @@ time_t getNtpTime()
     timeClient.update();
     time_t t = timeClient.getEpochTime();
     breakTime(t, jetzt);
-    return (time_t)(t);
+    return (time_t)(t + ntpOffset);
 }

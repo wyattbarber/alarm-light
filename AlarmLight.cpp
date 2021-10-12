@@ -37,11 +37,11 @@ void AlarmLight::update()
     }
     else if (now() < next_alarm) // Light-up stage
     {
-        float progress = (now() - light_time) / LIGHTUP_TIME;
-        rgbw[0] = (int)(maxRGBW[0] * progress);
-        rgbw[1] = (int)(maxRGBW[1] * progress);
-        rgbw[2] = (int)(maxRGBW[2] * progress);
-        rgbw[3] = (int)(maxRGBW[3] * progress);
+        int progress = ((now() - light_time) * 100)/ LIGHTUP_TIME;
+        rgbw[0] = map(progress, 0, 100, 0, maxRGBW[0]);
+        rgbw[1] = map(progress, 0, 100, 0, maxRGBW[1]);
+        rgbw[2] = map(progress, 0, 100, 0, maxRGBW[2]);
+        rgbw[3] = map(progress, 0, 100, 0, maxRGBW[3]);
         buzzer = false;
     }
     else if(now() < end_alarm) // Alarm stage
@@ -64,9 +64,15 @@ void AlarmLight::update()
     }
 }
 
-void AlarmLight::setAlarm(TimeElements alarm) { this->alarm = alarm; }
+void AlarmLight::setAlarm(TimeElements alarm) { 
+    this->alarm = alarm; 
+    incrementAlarm();
+}
+
 time_t AlarmLight::getAlarm(){ return next_alarm; }
+
 bool AlarmLight::getBuzzer(){ return buzzer; }
+
 int* AlarmLight::getLights(){ return rgbw; }
 
 void AlarmLight::acknowledge()
@@ -76,13 +82,12 @@ void AlarmLight::acknowledge()
 
 time_t AlarmLight::incrementAlarm()
 {
-    TimeElements tm;
-    breakTime(now(), tm);
-
-    tm.Second   = alarm.Second;
-    tm.Minute   = alarm.Minute;
-    tm.Hour     = alarm.Hour;
-
-    next_alarm = makeTime(tm);
+    time_t midnight = now() - ((hour()*3600) + (minute()*60) + second());
+    next_alarm = midnight;
+    next_alarm += alarm.Hour * 3600;
+    next_alarm += alarm.Minute * 60;
+    next_alarm += alarm.Second;
+    light_time = next_alarm - LIGHTUP_TIME;
+    end_alarm = next_alarm + MAX_ALARM_TIME;
     return next_alarm;
 }
