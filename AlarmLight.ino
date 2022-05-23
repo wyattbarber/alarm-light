@@ -6,6 +6,10 @@
 #include <Time.h>
 #include <TimeLib.h>
 
+#define ROSSERIAL_ARDUINO_TCP
+#include <ros.h>
+#include <std_msgs/Int32.h>
+
 #define BUT_PIN D1
 #define TWELVE_V_PIN D3
 #define RED_PIN D4
@@ -15,9 +19,16 @@
 #define BUZ_PIN D8
 #define MAT_PIN A0
 
+// ROS data
+ros::NodeHandle nh;
+std_msgs::Int32 tMsg;
+ros::Publisher test("test_topic", &tMsg);
+
 // Wifi access data
 const char *ssid = "the wifi";
 const char *pswd = "the wifi password";
+IPAddress server(192, 168, 0, 105);
+uint16_t port = 11411;
 
 // NTP client data
 long ntpOffset = -14400;
@@ -30,7 +41,7 @@ SmartHome::AlarmLight *alarm;
 int maxLights[] = {1023, 1023, 1023, 1023};
 
 // Button edge detect
-SmartHome::Helpers::RTrig button([](){return digitalRead(BUT_PIN);});
+//SmartHome::Helpers::RTrig button([](){return digitalRead(BUT_PIN);});
 
 void setup()
 {
@@ -70,13 +81,10 @@ void setup()
         delay(1000);
     }
 
-    Serial.println("Setting alarm.");
-    TimeElements a;
-    a.Hour      = 6;
-    a.Minute    = 0;
-    a.Second    = 0;
-    alarm->setAlarm(a);
-
+    // Setup ROS
+    nh.getHardware()->setConnection(server, port);
+    nh.initNode();
+    nh.advertise(test);
 }
 
 void loop()
@@ -111,20 +119,13 @@ void loop()
     // Set buzzer output
     digitalWrite(BUZ_PIN, alarm->getBuzzer());
 
-    // Check button
+/*    // Check button
     if(button.Q())
     {
-        alarm->acknowledge();
+        alarm->Off();
     }
-
+*/
     // Log times status for debugging
-    Serial.print("Current time: ");
-    Serial.print(now());
-    Serial.print(". Alarm at: ");
-    Serial.print(alarm->getAlarm());
-    Serial.print(". Time to go: ");
-    Serial.print(alarm->getAlarm() - now());
-    Serial.print('\n');
     Serial.print("Lights: ");
     Serial.print(rgbw[0]);
     Serial.print(", ");
@@ -134,6 +135,11 @@ void loop()
     Serial.print(", ");
     Serial.print(rgbw[3]);
     Serial.print(". \n");
+
+    // publish
+    tMsg.data = now();
+    test.publish(&tMsg);
+    nh.spinOnce();
 
     delay(1000);
 }

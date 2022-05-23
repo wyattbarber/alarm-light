@@ -9,7 +9,7 @@
                 "C:\\Users\\wyatt\\Documents\\Arduino\\libraries\\NTPClient",
                 "C:\\Users\\wyatt\\Documents\\Arduino\\libraries\\Rosserial_Arduino_Library",
                 "C:\\Users\\wyatt\\AppData\\Local\\Arduino15\\packages\\esp8266\\tools\\**",
-                "C:\\Users\\wyatt\\AppData\\Local\\Arduino15\\packages\\esp8266\\hardware\\esp8266\\2.7.4\\**"
+                "C:\\Users\\wyatt\\AppData\\Local\\Arduino15\\packages\\esp8266\\hardware\\esp8266\\3.0.2\\**"
             ],
             "forcedInclude": [],
             "intelliSenseMode": "msvc-x64",
