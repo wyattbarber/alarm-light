@@ -1,7 +1,7 @@
 #include "AlarmLight.h"
 #include <algorithm>
 #include <functional>
-#include <Arduino.h>
+
 
 using SmartHome::AlarmLight;
 
