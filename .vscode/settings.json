@@ -16,5 +16,9 @@
         "utility": "cpp",
         "string": "cpp"
     },
-    "ros.distro": "melodic"
+    "ros.distro": "melodic",
+    "python.autoComplete.extraPaths": [
+        "C:/opt/ros/melodic/x64\\lib/site-packages",
+        "c:/opt/ros/melodic/x64\\lib/site-packages"
+    ]
 }
