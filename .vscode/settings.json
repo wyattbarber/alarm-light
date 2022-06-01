@@ -16,5 +16,9 @@
         "utility": "cpp",
         "string": "cpp"
     },
-    "ros.distro": "melodic"
+    "ros.distro": "melodic",
+    "python.autoComplete.extraPaths": [
+        "/home/wyatt/catkin_ws/devel/lib/python3/dist-packages",
+        "/opt/ros/noetic/lib/python3/dist-packages"
+    ]
 }

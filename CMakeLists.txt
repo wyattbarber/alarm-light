@@ -16,7 +16,6 @@ rosserial_generate_ros_lib(
 rosserial_configure_client(
   DIRECTORY src
   TOOLCHAIN_FILE ${ROSSERIAL_ARDUINO_TOOLCHAIN}
-)
 
 rosserial_add_client_target(src alarm-light ALL)
 rosserial_add_client_target(src alarm-light-upload)
