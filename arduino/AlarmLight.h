@@ -114,6 +114,7 @@ namespace SmartHome
         bool    getBuzzer();
         void    On();
         void    Off();
+        bool    isOn();
 
     private:   
         bool    on;

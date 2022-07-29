@@ -1,3 +1,4 @@
+#include <Arduino.h>
 #include "AlarmLight.h"
 #include <algorithm>
 #include <functional>
@@ -24,6 +25,10 @@ void AlarmLight::On()
     time_on = now();
     alarm_time = time_on + LIGHTUP_TIME;
     end_alarm = alarm_time + MAX_ALARM_TIME;
+}
+
+bool AlarmLight::isOn(){
+  return on;
 }
 
 void AlarmLight::Off() {on = false;}

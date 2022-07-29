@@ -1,0 +1,11 @@
+<launch>
+    <node pkg="smarthome" type="gateway.js" name="gateway" output="screen"/>
+    <node pkg="smarthome" type="device_manager" name="mgr" output="screen"/>
+    <node pkg="alarm-light" type="alarm-light" name="alarm" output="screen"/>
+    <node pkg="rosserial_python" type="serial_node.py" name="rosserial_server" output="screen">
+        <rosparam>
+            port:       tcp
+            tcp_port:   11411
+        </rosparam>
+    </node>
+</launch>

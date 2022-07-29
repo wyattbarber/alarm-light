@@ -2,20 +2,24 @@ cmake_minimum_required(VERSION 2.8.3)
 project(alarm-light)
 
 find_package(catkin REQUIRED COMPONENTS
-  rosserial_arduino
-  rosserial_client
+  roscpp
+  std_msgs
+  smarthome
 )
 
-catkin_package()
-
-rosserial_generate_ros_lib(
-  PACKAGE rosserial_arduino smarthome
-  SCRIPT make_libraries.py
+catkin_package(
+  INCLUDE_DIRS include
+  LIBRARIES ${PROJECT_NAME}
+  CATKIN_DEPENDS roscpp
 )
 
-rosserial_configure_client(
-  DIRECTORY src
-  TOOLCHAIN_FILE ${ROSSERIAL_ARDUINO_TOOLCHAIN}
+include_directories(${catkin_INCLUDE_DIRS} include)
 
-rosserial_add_client_target(src alarm-light ALL)
-rosserial_add_client_target(src alarm-light-upload)
+add_executable(${PROJECT_NAME}_alarm-light src/alarm-light.cpp)
+target_link_libraries(${PROJECT_NAME}_alarm-light ${catkin_LIBRARIES})
+set_target_properties(${PROJECT_NAME}_alarm-light PROPERTIES
+  OUTPUT_NAME alarm-light
+  PREFIX "")
+
+install(TARGETS ${PROJECT_NAME}_alarm-light 
+  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
